@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MikroTik OpenVPN Manager (RouterOS Crypto)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff;--bg2:#f5f5f4;--bg3:#e8e8e6;
+  --txt:#1a1a1a;--txt2:#6b6b6b;--txt3:#9ca3a0;
+  --border:#e0dfd8;--border2:#c8c7c0;
+  --accent:#1a1a1a;--accent-fg:#ffffff;
+  --success:#15803d;--success-bg:#f0fdf4;--success-border:#bbf7d0;
+  --warn:#b45309;--warn-bg:#fffbeb;--warn-border:#fde68a;
+  --info:#1d4ed8;--info-bg:#eff6ff;--info-border:#bfdbfe;
+  --danger:#b91c1c;--danger-bg:#fef2f2;--danger-border:#fecaca;
+  --radius:8px;--radius-lg:12px;--mono:'Courier New',monospace;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#1c1c1a;--bg2:#252522;--bg3:#2e2e2b;
+    --txt:#f0ede8;--txt2:#a0a09a;--txt3:#6b6b65;
+    --border:#38383380;--border2:#505050;
+    --success:#4ade80;--success-bg:#052e16;--success-border:#166534;
+    --warn:#fbbf24;--warn-bg:#1c1100;--warn-border:#854d0e;
+    --info:#60a5fa;--info-bg:#0c1a3a;--info-border:#1e3a8a;
+    --danger:#f87171;--danger-bg:#1a0505;--danger-border:#7f1d1d;
+  }
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--txt);min-height:100vh}
+.app{max-width:900px;margin:0 auto;padding:1.5rem 1rem}
+.header{text-align:center;padding:1.5rem 1rem;margin-bottom:1.5rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg)}
+.header h1{font-size:20px;font-weight:600;color:var(--txt);margin-bottom:4px}
+.header p{font-size:13px;color:var(--txt2)}
+.tabs{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:1.25rem}
+.tab{flex:1;padding:10px 4px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;color:var(--txt2);font-family:inherit;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .15s;border-left:1px solid var(--border)}
+.tab:first-child{border-left:none}
+.tab.active{background:var(--bg2);color:var(--txt)}
+.tab:hover:not(.active){background:var(--bg2)}
+.tab .dot{width:7px;height:7px;border-radius:50%;background:var(--success);display:none}
+.tab.done .dot{display:block}
+.page{display:none}.page.show{display:block}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem}
+.card-title{font-size:12px;font-weight:600;color:var(--txt2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:1rem;display:flex;align-items:center;gap:6px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.field:last-child{margin-bottom:0}
+.field label{font-size:12px;color:var(--txt2);font-weight:500}
+.field input,.field select,.field textarea{font-size:13px;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--txt);width:100%;font-family:inherit;direction:ltr;transition:border-color .15s}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent)}
+.field .hint{font-size:11px;color:var(--txt3)}
+.divider{height:1px;background:var(--border);margin:.85rem 0}
+.togs{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.tog{font-size:11px;padding:4px 12px;border:1px solid var(--border2);border-radius:20px;cursor:pointer;background:none;color:var(--txt2);font-family:inherit;transition:all .12s}
+.tog.on{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.actions{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:1rem}
+.btn{padding:8px 16px;font-size:12px;font-weight:500;border:1px solid var(--border2);border-radius:var(--radius);cursor:pointer;background:var(--bg2);color:var(--txt);font-family:inherit;display:flex;align-items:center;gap:6px;transition:all .12s}
+.btn:hover{background:var(--bg3)}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.primary:hover{opacity:.85}
+.gen-area{text-align:center;padding:1.5rem}
+.gen-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 28px;font-size:14px;font-weight:600;border:1px solid var(--accent);border-radius:var(--radius);cursor:pointer;background:var(--accent);color:var(--accent-fg);font-family:inherit;transition:all .12s}
+.gen-btn:hover{opacity:.85}
+.out-switcher{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
+.ow{font-size:12px;padding:6px 12px;border:1px solid var(--border2);border-radius:var(--radius);cursor:pointer;background:none;color:var(--txt2);font-family:inherit;display:flex;align-items:center;gap:5px;transition:all .12s}
+.ow.active{background:var(--bg2);color:var(--txt);border-color:var(--border2);font-weight:500}
+.code-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.code-label{font-size:11px;font-weight:600;color:var(--txt2)}
+.code-actions{display:flex;gap:5px}
+.sm-btn{font-size:11px;padding:4px 9px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);cursor:pointer;color:var(--txt2);font-family:inherit;display:flex;align-items:center;gap:4px;transition:all .12s}
+.sm-btn:hover{background:var(--bg3)}
+.code-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:.85rem;font-family:var(--mono);font-size:11px;color:var(--txt);white-space:pre-wrap;overflow-x:auto;direction:ltr;max-height:380px;overflow-y:auto;line-height:1.65}
+.users-wrap{margin-top:.5rem}
+.user-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}
+.user-row:last-child{border-bottom:none}
+.user-row input{flex:1;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--txt);font-family:var(--mono);direction:ltr}
+.del-btn{padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:none;cursor:pointer;color:var(--txt2);font-size:11px;transition:all .12s}
+.del-btn:hover{background:var(--danger-bg);border-color:var(--danger-border);color:var(--danger)}
+.add-row{width:100%;padding:7px;font-size:12px;border:1px dashed var(--border2);border-radius:var(--radius);background:none;cursor:pointer;color:var(--txt2);font-family:inherit;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .12s}
+.add-row:hover{background:var(--bg2)}
+.empty{text-align:center;padding:2.5rem 1rem;color:var(--txt3);font-size:13px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="header">
+  <h1>🔐 MikroTik OpenVPN Manager (RouterOS Crypto)</h1>
+</div>
+
+<div class="tabs" id="tabs-container">
+  <button class="tab active" onclick="go('p1',0)">① Certificate</button>
+  <button class="tab" onclick="go('p2',1)">② سرور</button>
+  <button class="tab" onclick="go('p3',2)">③ شبکه</button>
+  <button class="tab" onclick="go('p4',3)">④ یوزرها</button>
+  <button class="tab" onclick="go('p5',4)">⑤ تولید اسکریپت</button>
+  <button class="tab" onclick="go('p6',5)" id="tab-out">⑥ خروجی</button>
+</div>
+
+<div class="page show" id="p1">
+  <div class="card">
+    <div class="card-title">🏛 تنظیمات نام گواهی‌ها در میکروتیک</div>
+    <div class="g2">
+      <div class="field"><label>نام گواهی CA</label><input id="ca-cn" value="ovpn-ca"></div>
+      <div class="field"><label>نام گواهی سرور</label><input id="sv-cn" value="ovpn-server"></div>
+      <div class="field" style="grid-column:1/-1"><label>آی‌پی یا دامنه سرور (SAN)</label><input id="sv-san" value="1.2.3.4"><span class="hint">برای تایید هویت TLS توسط سیستم‌عامل‌ها الزامی است</span></div>
+      <div class="field"><label>نام گواهی کلاینت</label><input id="cl-cn" value="ovpn-client1"></div>
+      <div class="field"><label>الگوریتم رمزنگاری کلید</label>
+        <select id="cert-key"><option value="ec-p256">ECDSA P-256 (سریع و امن)</option><option value="2048">RSA 2048</option></select>
+      </div>
+    </div>
+  </div>
+  <div class="actions"><span></span><button class="btn primary" onclick="go('p2',1)">بعدی ←</button></div>
+</div>
+
+<div class="page" id="p2">
+  <div class="card">
+    <div class="card-title">⚙️ تنظیمات سرور MikroTik</div>
+    <div class="g2">
+      <div class="field"><label>آی‌پی عمومی یا DDNS (برای فایل کلاینت)</label><input id="s-ip" value="1.2.3.4"></div>
+      <div class="field"><label>پورت OpenVPN</label><input id="s-port" value="1194" type="number"></div>
+      <div class="field"><label>پروتکل</label>
+        <select id="s-proto"><option value="udp">UDP (پیشنهادی)</option><option value="tcp">TCP</option></select>
+      </div>
+      <div class="field"><label>اینترفیس WAN</label><input id="s-wan" value="ether1"></div>
+      <div class="field"><label>نام PPP Profile</label><input id="s-profile" value="ovpn-profile"></div>
+      <div class="field"><label>نام IP Pool</label><input id="s-pool" value="ovpn-pool"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="togs">
+      <button class="tog on" id="t-nat" onclick="this.classList.toggle('on')">NAT Masquerade</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">🔐 امنیت تونل</div>
+    <div class="g2">
+      <div class="field"><label>Cipher</label>
+        <select id="s-cipher"><option value="aes256">AES-256-CBC</option><option value="aes128">AES-128-CBC</option></select>
+      </div>
+      <div class="field"><label>Auth Hash</label>
+        <select id="s-auth"><option value="sha256">SHA256</option><option value="sha1">SHA1</option></select>
+      </div>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="btn" onclick="go('p1',0)">→ قبلی</button>
+    <button class="btn primary" onclick="go('p3',2)">بعدی ←</button>
+  </div>
+</div>
+
+<div class="page" id="p3">
+  <div class="card">
+    <div class="card-title">🌐 شبکه تونل VPN</div>
+    <div class="g2">
+      <div class="field"><label>شبکه تونل</label><input id="n-net" value="10.8.0.0"></div>
+      <div class="field"><label>ساب‌نت ماسک</label><input id="n-mask" value="255.255.255.0"></div>
+      <div class="field"><label>IP سرور (داخل تونل)</label><input id="n-sip" value="10.8.0.1"></div>
+      <div class="field"><label>رنج Pool کلاینت‌ها</label><input id="n-pool" value="10.8.0.2-10.8.0.254"></div>
+      <div class="field"><label>DNS اول</label><input id="n-dns1" value="8.8.8.8"></div>
+      <div class="field"><label>DNS دوم</label><input id="n-dns2" value="8.8.4.4"></div>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="btn" onclick="go('p2',1)">→ قبلی</button>
+    <button class="btn primary" onclick="go('p4',3)">بعدی ←</button>
+  </div>
+</div>
+
+<div class="page" id="p4">
+  <div class="card">
+    <div class="card-title">👥 کاربران VPN (PPP Secrets)</div>
+    <div class="users-wrap" id="users-list"></div>
+    <button class="add-row" onclick="addUser()">+ افزودن کاربر</button>
+  </div>
+  <div class="actions">
+    <button class="btn" onclick="go('p3',2)">→ قبلی</button>
+    <button class="btn primary" onclick="go('p5',4)">بعدی: تولید اسکریپت ←</button>
+  </div>
+</div>
+
+<div class="page" id="p5">
+  <div class="card">
+    <div class="card-title">🚀 کامپایل اسکریپت نهایی روتر‌اواس</div>
+    <div class="notice info">با کلیک روی دکمه زیر، دستورات بومی میکروتیک جهت تولید جفت‌کلیدها، ساخت CA، امضای خودکار گواهی‌ها و فعال‌سازی سرور با بالاترین بازدهی تولید می‌شود.</div>
+    <div class="gen-area">
+      <button class="gen-btn" onclick="generateRouterOSScript()">⚡ تولید اسکریپت میکروتیک</button>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="p6">
+  <div id="out-empty" class="empty">ابتدا در بخش قبلی روی دکمه تولید اسکریپت بزنید.</div>
+  <div id="out-main" style="display:none">
+    <div class="out-switcher">
+      <button class="ow active" onclick="showSec('sec-ros',this)">📋 RouterOS Script</button>
+      <button class="ow" onclick="showSec('sec-ovpn',this)">📄 client.ovpn Template</button>
+    </div>
+    <div id="sec-ros" class="out-sec">
+      <div class="code-header"><span class="code-label">دستورات ترمینال میکروتیک (کپی و پیست کنید)</span>
+        <div class="code-actions"><button class="sm-btn" onclick="cp('c-ros')">📋 کپی کدهای اسکریپت</button><button class="sm-btn" onclick="dlf('c-ros','mikrotik_setup.rsc')">⬇ دانلود فایل .rsc</button></div>
+      </div>
+      <div class="code-box" id="c-ros"></div>
+    </div>
+    <div id="sec-ovpn" class="out-sec" style="display:none">
+      <div class="code-header"><span class="code-label">client.ovpn (الگوی کلاینت)</span>
+        <div class="code-actions"><button class="sm-btn" onclick="cp('c-ovpn')">📋 کپی</button><button class="sm-btn" onclick="dlf('c-ovpn','client.ovpn')">⬇ دانلود .ovpn</button></div>
+      </div>
+      <div class="code-box" id="c-ovpn"></div>
+    </div>
+  </div>
+</div>
+
+</div>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const $$ = sel => Array.from(document.querySelectorAll(sel));
+  const state = { users: [] };
+  function val(id, fallback=''){ const el=$(id); return el ? (el.value ?? fallback).trim() : fallback; }
+  window.go = function(pageId, tabIdx){
+    $$('.page').forEach(el => el.style.display = 'none');
+    const pane = $(pageId); if (pane) pane.style.display = 'block';
+    const tabs = $$('#tabs-container .tab');
+    tabs.forEach(el => el.classList.remove('active'));
+    if (tabs[tabIdx]) tabs[tabIdx].classList.add('active');
+  };
+  function renderUsers(){
+    const wrap = $('users-list'); if (!wrap) return;
+    if (!state.users.length) state.users = [{username:'user1', password:'ChangeMe123!'}];
+    wrap.innerHTML = state.users.map((u,i)=>`
+      <div class="user-row" style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin:8px 0">
+        <input data-k="username" data-i="${i}" value="${u.username}" placeholder="نام کاربری">
+        <input data-k="password" data-i="${i}" value="${u.password}" placeholder="کلمه عبور">
+        <button type="button" class="del-btn" onclick="removeUser(${i})">حذف</button>
+      </div>
+    `).join('');
+    wrap.querySelectorAll('input[data-k]').forEach(inp=>{
+      inp.addEventListener('input', e=>{
+        state.users[+e.target.dataset.i][e.target.dataset.k] = e.target.value;
+      });
+    });
+  }
+  window.addUser = function(){ state.users.push({username:`user${state.users.length+1}`, password:'ChangeMe123!'}); renderUsers(); };
+  window.removeUser = function(idx){ state.users.splice(idx,1); renderUsers(); };
+  function maskToBits(mask){ return mask.split('.').map(Number).map(n=>n.toString(2)).join('').split('1').length-1; }
+  window.generateRouterOSScript = function(){
+    const ca = val('ca-cn'); const srv = val('sv-cn'); const cl = val('cl-cn');
+    const san = val('sv-san'); const kSize = val('cert-key');
+    const cfg = {
+      remote: val('s-ip'), port: val('s-port'), proto: val('s-proto'),
+      cipher: val('s-cipher'), auth: val('s-auth'), net: val('n-net'),
+      maskBits: maskToBits(val('n-mask')), serverTunnelIp: val('n-sip'),
+      pool: val('n-pool'), poolName: val('s-pool'), profile: val('s-profile'),
+      dns1: val('n-dns1'), dns2: val('n-dns2'), wan: val('s-wan'), nat: $('t-nat').classList.contains('on')
+    };
+    const lines = [
+      '# ========================================================',
+      '# 1. ساخت و صدور گواهی‌ها توسط خود میکروتیک (Native Crypto)',
+      '# ========================================================',
+      `/certificate add name="${ca}" common-name="${ca}" key-size="${kSize}" days-valid=3650 key-usage=key-cert-sign,crl-sign`,
+      `/certificate sign "${ca}" name="${ca}"`,
+      `:delay 3s;`,
+      '',
+      `/certificate add name="${srv}" common-name="${srv}" key-size="${kSize}" days-valid=1825 key-usage=digital-signature,key-encipherment,tls-server subject-alt-name=IP:${san}`,
+      `/certificate sign "${srv}" ca="${ca}" name="${srv}"`,
+      `:delay 3s;`,
+      '',
+      `/certificate add name="${cl}" common-name="${cl}" key-size="${kSize}" days-valid=365 key-usage=digital-signature,tls-client`,
+      `/certificate sign "${cl}" ca="${ca}" name="${cl}"`,
+      `:delay 3s;`,
+      '',
+      '# مورد اعتماد قرار دادن CA در سیستم لوکال',
+      `/certificate set [find common-name="${ca}"] trusted=yes`,
+      '',
+      '# ========================================================',
+      '# 2. تنظیمات سرویس‌های هسته شبکه و PPP',
+      '# ========================================================',
+      `/ip pool add name="${cfg.poolName}" ranges=${cfg.pool}`,
+      `/ppp profile add name="${cfg.profile}" local-address=${cfg.serverTunnelIp} remote-address=${cfg.poolName} dns-server=${cfg.dns1},${cfg.dns2} use-encryption=required`,
+    ];
+    state.users.forEach(u => {
+      lines.push(`/ppp secret add name="${u.username}" password="${u.password}" service=ovpn profile=${cfg.profile}`);
+    });
+    lines.push(
+      '',
+      '# ========================================================',
+      '# 3. فعال‌سازی نهایی سرور OpenVPN در میکروتیک',
+      '# ========================================================',
+      `/interface ovpn-server server set enabled=yes auth=${cfg.auth} certificate="${srv}" cipher=${cfg.cipher==='aes128'?'aes128':'aes256'} default-profile="${cfg.profile}" require-client-certificate=yes protocol=${cfg.proto} port=${cfg.port}`
+    );
+    if(cfg.nat) {
+      lines.push(`/ip firewall nat add chain=srcnat src-address=${cfg.net}/${cfg.maskBits} out-interface=${cfg.wan} action=masquerade comment="OVPN NAT"`);
+    }
+    lines.push(
+      '',
+      '# ========================================================',
+      '# 4. خروجی گرفتن گواهی کلاینت برای استفاده در فایل .ovpn',
+      '# ========================================================',
+      `/certificate export-keys [find common-name="${cl}"] passphrase="" type=pem file-name="${cl}"`,
+      `/certificate export [find common-name="${ca}"] type=pem file-name="${ca}"`
+    );
+    const ovpn = [
+      'client','dev tun',`proto ${cfg.proto}`,`remote ${cfg.remote} ${cfg.port}`,
+      'nobind','persist-key','persist-tun','remote-cert-tls server',
+      `auth ${cfg.auth.toUpperCase()}`,`cipher ${cfg.cipher==='aes128'?'AES-128-CBC':'AES-256-CBC'}`,
+      'auth-user-pass','verb 3','',
+      '# توجه: محتویات فایل‌های صادر شده را جایگزین تگ‌های زیر کنید:',
+      '<ca>','# [محتوای متنی فایل ca.crt را اینجا کپی کنید]','</ca>',
+      '<cert>','# [محتوای متنی فایل cert_ovpn-client1.crt را اینجا کپی کنید]','</cert>',
+      '<key>','# [محتوای متنی فایل cert_ovpn-client1.key را اینجا کپی کنید]','</key>'
+    ].join('\n');
+    $('c-ros').textContent = lines.join('\n');
+    $('c-ovpn').textContent = ovpn;
+    $('out-empty').style.display = 'none';
+    $('out-main').style.display = 'block';
+    go('p6', 5);
+  };
+  window.showSec = function(id, btn){
+    $$('.out-sec').forEach(el=>el.style.display='none');
+    const el=$(id); if(el) el.style.display='block';
+    if(btn){ btn.parentElement.querySelectorAll('.ow').forEach(x=>x.classList.remove('active')); btn.classList.add('active'); }
+  };
+  window.cp = async function(id){
+    const el=$(id); if(!el) return;
+    await navigator.clipboard.writeText(el.textContent || el.value || '');
+    alert('کد با موفقیت کپی شد.');
+  };
+  window.dlf = function(id, filename){
+    const el=$(id); if(!el) return;
+    const blob = new Blob([el.textContent || el.value || ''], {type:'text/plain;charset=utf-8'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = filename; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  };
+  renderUsers();
+})();
+</script>
+</body>
+</html>
